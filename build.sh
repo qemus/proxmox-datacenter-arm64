@@ -490,6 +490,10 @@ sed -i 's/^install: install_manual_pages install_html install_pdf$/install:\n\t$
 cd proxmox-datacenter-manager/
 set_package_info
 
+if [ "${PACKAGE_ARCH}" != "${HOST_ARCH}" ]; then
+  export DEB_BUILD_MAINT_OPTIONS="hardening=+all,-branch"
+fi
+
 ${SUDO} apt -y build-dep -a${HOST_ARCH} ${BUILD_PROFILES} .
 
 export DEB_VERSION=$(dpkg-parsechangelog -SVersion)
