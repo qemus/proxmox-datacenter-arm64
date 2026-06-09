@@ -52,7 +52,7 @@ jobs:
           fetch-depth: 0
       -
         name: Free up disk space
-        if: env.exists == 'false'
+        if: false
         run: |
           sudo rm -rf /usr/local/.ghcup
           sudo rm -rf /usr/local/lib/android
