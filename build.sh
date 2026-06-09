@@ -529,6 +529,15 @@ if [[ "${BUILD_PROFILES}" =~ cross ]]; then
     Signed-By: /usr/share/keyrings/proxmox-archive-keyring.gpg
 DEB
 
+   cat <<'DEB' | sed 's/^[[:space:]]*//' >/etc/apt/sources.list.d/proxmox-devel.sources
+Types: deb
+URIs: http://download.proxmox.com/debian/devel
+Suites: trixie
+Components: main
+Signed-By: /usr/share/keyrings/proxmox-archive-keyring.gpg
+DEB
+
+RUN apt update
   ${SUDO} apt update
 
     apt-cache policy \
