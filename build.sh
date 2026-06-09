@@ -523,10 +523,8 @@ if [[ "${BUILD_PROFILES}" =~ cross ]]; then
   # UI should be arch-independent
   sed -i '/^Package: proxmox-datacenter-manager-ui/,/^$/ s/^Architecture: any$/Architecture: all/' debian/control
 
-  # Disable dh-cargo's local Debian registry setup
-  sed -i '/prepare-debian/c\
-  mkdir -p debian/cargo_home\
-  printf "[net]\ngit-fetch-with-cli = true\n" > debian/cargo_home/config.toml' debian/rules
+  # Disable Debian cargo registry replacement
+  perl -0pi -e 's@^[ \t]*/usr/share/cargo/bin/cargo prepare-debian[^\n]*\n@\tmkdir -p debian/cargo_home\n\tprintf "[net]\\ngit-fetch-with-cli = true\\n" > debian/cargo_home/config.toml\n@m' debian/rules
 
   # Stop Debian cargo wrapper from replacing crates.io with debian/cargo_registry
   rm -rf debian/cargo_home debian/cargo_registry
