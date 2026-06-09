@@ -209,7 +209,7 @@ function select_package() {
 
 function set_package_info() {
 	if [ "$GITHUB_ACTION" ]; then
-		sed -i "s#^Maintainer:.*#Maintainer: https://github.com/qemus#" debian/control
+		sed -i "s#^Maintainer:.*#Maintainer: Github Actions <no-reply@github.com>#" debian/control
 		sed -i "s#^Homepage:.*#Homepage: https://github.com/qemus/proxmox-datacenter-arm64#" debian/control
 	else
 		sed -i "s#^\(Maintainer.*\)\$#\1\nOrigin: https://github.com/qemus/proxmox-datacenter-arm64#" debian/control
