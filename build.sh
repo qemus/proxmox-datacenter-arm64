@@ -587,3 +587,21 @@ if [ ! -e "${PACKAGES}/proxmox-termproxy_${PROXMOX_TERMPROXY_VER}_${HOST_ARCH}.d
 else
   echo "pve-xtermjs up-to-date"
 fi
+
+PROXMOX_JOURNALREADER_VER="1.6-1"
+PROXMOX_JOURNALREADER_GIT="b09ee543344fb7082a27346ecb0008f38af6367d"
+if [ ! -e "${PACKAGES}/proxmox-mini-journalreader_${PROXMOX_JOURNALREADER_VER}_${HOST_ARCH}.deb" ]; then
+	git_clone_or_fetch https://git.proxmox.com/git/proxmox-mini-journalreader.git
+	git_clean_and_checkout ${PROXMOX_JOURNALREADER_GIT} proxmox-mini-journalreader
+	patch -p1 -d proxmox-mini-journalreader/ <${PATCHES}/proxmox-mini-journalreader.patch
+	[[ "${BUILD_PROFILES}" =~ cross ]] &&
+		patch -p1 -d proxmox-mini-journalreader/ <"${PATCHES}/proxmox-mini-journalreader-cross.patch"
+	cd proxmox-mini-journalreader/
+	set_package_info
+	${SUDO} apt -y -a${PACKAGE_ARCH} build-dep .
+	make deb
+	mv -f proxmox-mini-journalreader{,-dbgsym}_${PROXMOX_JOURNALREADER_VER}_${HOST_ARCH}.deb "${PACKAGES}"
+	cd ..
+else
+	echo "proxmox-mini-journalreader up-to-date"
+fi
