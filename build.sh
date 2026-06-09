@@ -544,9 +544,17 @@ EOF
   debian/control
 
   # Fix missing pwt-assets
-  PWT_ASSETS="$(dirname "$(dirname "$(find /usr/share -path '*/scss/crisp-yew-style.scss' -print -quit)")")"
-  rm -rf pwt-assets
-  cp -a "$PWT_ASSETS" pwt-assets
+PWT_SCSS="$(find /usr/share /usr/lib -path '*/scss/crisp-yew-style.scss' -print -quit)"
+echo "PWT_SCSS=$PWT_SCSS"
+
+PWT_ASSETS="$(dirname "$(dirname "$PWT_SCSS")")"
+echo "PWT_ASSETS=$PWT_ASSETS"
+
+test -n "$PWT_SCSS"
+test -d "$PWT_ASSETS/scss"
+
+rm -rf pwt-assets
+cp -a "$PWT_ASSETS" pwt-assets
 
   # Add Proxmox Datacenter Manager repository
   curl -sL https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg \
