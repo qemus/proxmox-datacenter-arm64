@@ -304,7 +304,7 @@ while [ "$#" -ge 1 ]; do
 		${SUDO} apt install -y crossbuild-essential-arm64 pkgconf:arm64 libssl-dev:arm64 nettle-dev:arm64 libudev-dev:arm64 \
 		                       libcrypt-dev:arm64 libsystemd-dev:arm64 libacl1-dev:arm64 uuid-dev:arm64 libfuse3-dev:arm64 \
 							   libldap2-dev:arm64 libzstd-dev:arm64 libpam0g-dev:arm64 zlib1g-dev:arm64 libapt-pkg-dev:arm64 \
-						       jq rsync qemu-user qemu-user-binfmt apt:arm64 patchelf binutils-aarch64-linux-gnu
+						       jq rsync qemu-user qemu-user-binfmt patchelf binutils-aarch64-linux-gnu
 
 		export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=/usr/bin/aarch64-linux-gnu-gcc
 		export CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_RUNNER=qemu-aarch64
