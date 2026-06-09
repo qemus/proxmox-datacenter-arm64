@@ -106,7 +106,7 @@ sudo apt install \
 	./libjs-extjs_*_all.deb \
 	./libproxmox-acme-plugins_*_all.deb \
     ./proxmox-widget-toolkit_*_all.deb \
-	./proxmox-datacenter-manager*_arm64.deb
+	./proxmox-datacenter-manager_*_arm64.deb
 ```
 
 ## Help section
