@@ -516,6 +516,7 @@ if [[ "${BUILD_PROFILES}" =~ cross ]]; then
 
   cd ui
   set_package_info
+
   # UI package: do not use Debian-packaged Rust crates
   sed -i '/dh-cargo\|cargo:native\|rustc:native\|librust-\|libstd-rust-dev/d' debian/control
 
@@ -526,11 +527,6 @@ if [[ "${BUILD_PROFILES}" =~ cross ]]; then
   sed -i '/prepare-debian/c\
   mkdir -p debian/cargo_home\
   printf "[net]\ngit-fetch-with-cli = true\n" > debian/cargo_home/config.toml' debian/rules
-
-  # Fix missing pwt-assets
-  PWT_ASSETS="$(dpkg -L proxmox-widget-toolkit-dev | grep '/pwt-assets$' | head -n1)"
-  rm -rf pwt-assets
-  cp -a "$PWT_ASSETS" pwt-assets
 
   # Stop Debian cargo wrapper from replacing crates.io with debian/cargo_registry
   rm -rf debian/cargo_home debian/cargo_registry
@@ -546,6 +542,11 @@ EOF
 
   sed -i '/^Package: proxmox-datacenter-manager-ui/,/^$/ s/^Architecture: any$/Architecture: all/' \
   debian/control
+
+  # Fix missing pwt-assets
+  PWT_ASSETS="$(dirname "$(dirname "$(find /usr/share -path '*/scss/crisp-yew-style.scss' -print -quit)")")"
+  rm -rf pwt-assets
+  cp -a "$PWT_ASSETS" pwt-assets
 
   # Add Proxmox Datacenter Manager repository
   curl -sL https://enterprise.proxmox.com/debian/proxmox-archive-keyring-trixie.gpg \
