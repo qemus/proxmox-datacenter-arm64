@@ -839,7 +839,7 @@ while [ "$#" -ge 1 ]; do
 		fi
 		exit 0
 		;;
-	github*)
+	github)
 		GITHUB_ACTION="true"
 		;;
 	nocheck)
