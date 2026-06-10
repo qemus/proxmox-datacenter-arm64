@@ -1175,8 +1175,15 @@ if [ ! -e "${PACKAGES}/proxmox-mini-journalreader_${PROXMOX_JOURNALREADER_VER}_$
 	set_package_info
 	${SUDO} apt -y -a${HOST_ARCH} build-dep .
 	make deb
-	journalreader_deb="$(find "${SOURCES}/proxmox-mini-journalreader" -maxdepth 2 -type f -name "proxmox-mini-journalreader_${PROXMOX_JOURNALREADER_VER}_${HOST_ARCH}.deb" -print -quit)"
-	if [ -z "${journalreader_deb}" ]; then
+    journalreader_deb="$(
+      find "${SOURCES}/proxmox-mini-journalreader" \
+        -maxdepth 3 \
+        -type f \
+        -name "proxmox-mini-journalreader_*_${HOST_ARCH}.deb" \
+        ! -name "*-dbgsym_*" \
+        -print -quit
+    )"	
+    if [ -z "${journalreader_deb}" ]; then
 		echo "Error: proxmox-mini-journalreader .deb not found" >&2
 		find "${SOURCES}/proxmox-mini-journalreader" -maxdepth 3 -type f -name 'proxmox-mini-journalreader*.deb' -ls >&2
 		exit 1
