@@ -6,7 +6,7 @@ At least 4 GB are required for compiling. On devices with low memory, SWAP must 
 
 ## Download pre-built packages
 
-You can find unofficial debian packages for **Trixie** that are created with the build.sh script and github actions at https://github.com/qemus/proxmox-datacenter-arm64/releases.
+You can find unofficial debian packages for **Debian/Trixie** that are created with the build.sh script and github actions at https://github.com/qemus/proxmox-datacenter-arm64/releases.
 
 With the script you can also download all files of the latest release at once
 
