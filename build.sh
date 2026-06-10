@@ -593,13 +593,15 @@ function set_package_info() {
 }
 
 function repack_deb_as_all() {
-  deb="$1"
+  local deb="$1"
+  local tmp out
+
   tmp="$(mktemp -d)"
   out="${deb%_amd64.deb}_all.deb"
 
-  dpkg-deb -R "$deb" "$tmp"
+  dpkg-deb -R "$deb" "$tmp" >&2
   sed -i 's/^Architecture: .*/Architecture: all/' "$tmp/DEBIAN/control"
-  dpkg-deb -b "$tmp" "$out"
+  dpkg-deb -b "$tmp" "$out" >&2
 
   rm -rf "$tmp"
   rm -f "$deb"
