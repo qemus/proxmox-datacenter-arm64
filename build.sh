@@ -560,6 +560,12 @@ function repack_deb_as_all() {
   echo "$out"
 }
 
+function is_container() {
+    [ -f /.dockerenv ] ||
+    [ -f /run/.containerenv ] ||
+    grep -qaE '(docker|containerd|kubepods|libpod)' /proc/1/cgroup 2>/dev/null
+}
+
 file_list=()
 function download_release() {
 	version=${1:-latest}
@@ -593,8 +599,13 @@ function download_release() {
 		fi
 
         [[ "$file" == *"dbgsym"* ]] && continue
-		[[ "$file" == "proxmox-kernel-helper"* ]] && continue
-        [[ "$file" == "proxmox-datacenter-manager-meta"* ]] && continue
+
+        if is_container; then
+            [[ "$file" == proxmox-kernel-* ]] && continue
+	    	[[ "$file" == "proxmox-kernel-helper"* ]] && continue
+		    [[ "$file" == "proxmox-default-kernel"* ]] && continue
+		    [[ "$file" == "proxmox-datacenter-manager-meta"* ]] && continue
+		fi
 
 		file_list+=("${PACKAGES}/${file}")
 	done
