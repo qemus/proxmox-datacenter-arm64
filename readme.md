@@ -101,8 +101,10 @@ rustup target add aarch64-unknown-linux-gnu
 
 ## Install packages
 
+Install all generated packages:
+
 ```bash
-sudo apt install ./*.deb
+sudo apt install ./packages/*.deb
 ```
 
 ## Help section
