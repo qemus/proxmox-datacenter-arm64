@@ -620,10 +620,12 @@ function install_server() {
 		return 1
 	fi
 
-	# Kernel/header packages are not usable inside this container.
-	rm -f "${PACKAGES}"/pve-headers_*.deb
-	rm -f "${PACKAGES}"/proxmox-headers-*.deb
-	rm -f "${PACKAGES}"/proxmox-default-headers_*.deb
+	# Kernel/header packages are not usable inside a container.
+	if is_container; then
+	    rm -f "${PACKAGES}"/pve-headers_*.deb
+	    rm -f "${PACKAGES}"/proxmox-headers-*.deb
+	    rm -f "${PACKAGES}"/proxmox-default-headers_*.deb
+	fi
 
 	mapfile -t file_list < <(find "${PACKAGES}" -maxdepth 1 -name '*.deb' -print | sort)
 
