@@ -117,12 +117,16 @@ You can add the debug option to redirect the complete build process output also 
 ./build.sh debug
 ```
 
-## Stars 🌟
-[![Stargazers](https://raw.githubusercontent.com/star-stats/stars/refs/heads/data/charts/qemus-proxmox-datacenter-arm64.svg)](https://github.com/qemus/proxmox-datacenter-arm64/stargazers)
-
 ## Acknowledgements
 
 Special thanks to [wofferl](https://github.com/wofferl), this project would not exist without his invaluable work.
+
+## Stars 🌟
+[![Stargazers](https://raw.githubusercontent.com/star-stats/stars/refs/heads/data/charts/qemus-proxmox-datacenter-arm64.svg)](https://github.com/qemus/proxmox-datacenter-arm64/stargazers)
+
+## Disclaimer ⚖️
+
+*The product names, logos, brands, and other trademarks referred to within this project are the property of their respective trademark holders. This project is not affiliated, sponsored, or endorsed by Proxmox Server Solutions GmbH.*
 
 [build_url]: https://github.com/qemus/proxmox-datacenter-arm64/
 [release_url]: https://github.com/qemus/proxmox-datacenter-arm64/releases/
