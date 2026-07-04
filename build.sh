@@ -882,9 +882,8 @@ PROXMOX_DM_GIT=""
 PROXMOX_GIT=""
 
 pdm_deb="${PACKAGES}/proxmox-datacenter-manager_${PROXMOX_DM_VER}_${HOST_ARCH}.deb"
-pdm_ui_deb="${PACKAGES}/proxmox-datacenter-manager-ui_${PROXMOX_DM_VER}_all.deb"
 
-if [ -e "${pdm_deb}" ] && { [[ ! "${BUILD_PROFILES}" =~ cross ]] || [ -e "${pdm_ui_deb}" ]; }; then
+if [ -e "${pdm_deb}" ]; then
   echo "proxmox-datacenter-manager up-to-date"
   exit 0
 fi
