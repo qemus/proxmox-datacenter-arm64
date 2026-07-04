@@ -578,7 +578,21 @@ function download_release() {
 		curl -sSfL "${release_url}" |
 			jq -r '
 				.assets[]
-				| select(.name | test("static|dbgsym") | not)
+				| select(
+					.name
+					| test(
+						"static"
+						+ "|dbgsym"
+						+ "|pve-headers"
+						+ "|proxmox-headers"
+						+ "|proxmox-default-headers"
+						+ "|proxmox-kernel"
+						+ "|proxmox-kernel-helper"
+						+ "|proxmox-default-kernel"
+						+ "|proxmox-datacenter-manager-meta"
+					)
+					| not
+				)
 				| .browser_download_url
 			'
 	)
@@ -589,23 +603,13 @@ function download_release() {
 	fi
 
 	for download_url in "${download_urls[@]}"; do
-
 		file=$(basename "${download_url}")
-		
+
 		if [ -e "${PACKAGES}/${file}" ]; then
 			echo "${file} already exists"
 		else
 			echo "Downloading ${file}"
 			curl -sSfL "${download_url}" -o "${PACKAGES}/${file}"
-		fi
-
-        [[ "$file" == *"dbgsym"* ]] && rm "${PACKAGES}/${file}" && continue
-
-        if is_container; then
-            [[ "$file" == "proxmox-kernel-"* ]] && rm "${PACKAGES}/${file}" && continue
-	    	[[ "$file" == "proxmox-kernel-helper"* ]] && rm "${PACKAGES}/${file}" && continue
-		    [[ "$file" == "proxmox-default-kernel"* ]] && rm "${PACKAGES}/${file}" && continue
-		    [[ "$file" == "proxmox-datacenter-manager-meta"* ]] && rm "${PACKAGES}/${file}" && continue
 		fi
 
 		file_list+=("${PACKAGES}/${file}")
@@ -619,12 +623,15 @@ function install_server() {
 		return 1
 	fi
 
-	# Kernel/header packages are not usable inside a container.
-	if is_container; then
-	    rm -f "${PACKAGES}"/pve-headers_*.deb
-	    rm -f "${PACKAGES}"/proxmox-headers-*.deb
-	    rm -f "${PACKAGES}"/proxmox-default-headers_*.deb
-	fi
+	# Kernel/header/meta packages are not needed for this install and may be
+	# uninstallable on ARM64 because their meta dependencies are unavailable.
+	rm -f "${PACKAGES}"/pve-headers_*.deb
+	rm -f "${PACKAGES}"/proxmox-headers-*.deb
+	rm -f "${PACKAGES}"/proxmox-default-headers_*.deb
+	rm -f "${PACKAGES}"/proxmox-kernel-*.deb
+	rm -f "${PACKAGES}"/proxmox-kernel-helper_*.deb
+	rm -f "${PACKAGES}"/proxmox-default-kernel_*.deb
+	rm -f "${PACKAGES}"/proxmox-datacenter-manager-meta_*.deb
 
 	mapfile -t file_list < <(find "${PACKAGES}" -maxdepth 1 -name '*.deb' -print | sort)
 
@@ -796,8 +803,12 @@ PROXMOX_DM_VER="${PROXMOX_DM_VER%%-*}"
 PROXMOX_DM_GIT=""
 PROXMOX_GIT=""
 
-if [ -e "${PACKAGES}/proxmox-datacenter-manager_${PROXMOX_DM_VER}_${HOST_ARCH}.deb" ] && { [[ ! "${BUILD_PROFILES}" =~ cross ]] || [ -e "${PACKAGES}/proxmox-datacenter-manager-ui_${PROXMOX_DM_VER}_all.deb" ]; }; then
-  echo "proxmox-datacenter-manager up-to-date" && exit 0
+pdm_deb="${PACKAGES}/proxmox-datacenter-manager_${PROXMOX_DM_VER}_${HOST_ARCH}.deb"
+pdm_ui_deb="${PACKAGES}/proxmox-datacenter-manager-ui_${PROXMOX_DM_VER}_all.deb"
+
+if [ -e "${pdm_deb}" ] && { [[ ! "${BUILD_PROFILES}" =~ cross ]] || [ -e "${pdm_ui_deb}" ]; }; then
+  echo "proxmox-datacenter-manager up-to-date"
+  exit 0
 fi
 
 git_clone_or_fetch https://git.proxmox.com/git/proxmox.git
