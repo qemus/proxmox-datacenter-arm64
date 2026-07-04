@@ -110,7 +110,6 @@ function download_package_max_upstream_no_deps() {
 	echo "${file}"
 }
 
-
 function download_arch_all_package_satisfying() {
 	repo=${1}
 	package_name=${2}
@@ -399,7 +398,7 @@ function git_clone_or_fetch() {
 	if [ ! -d "${name}" ]; then
 		git clone "${url}"
 	else
-		git -C "${name}" fetch
+		git -C "${name}" fetch --all --tags --prune
 	fi
 }
 
