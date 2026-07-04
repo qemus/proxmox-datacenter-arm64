@@ -372,20 +372,6 @@ function download_package_latest() {
 	download_package "${repo}" "${package}" "${version}" "${dest}"
 }
 
-function resolve_commit_for_debian_version() {
-	version=${1}
-	repo_path=${2}
-	package_name=${3:-}
-
-	# Compatibility wrapper. The generic package resolver handles tags,
-	# root changelogs, and nested */debian/changelog files.
-	if [ -n "${package_name}" ]; then
-		resolve_commit_for_package_version "${version}" "${repo_path}" "${package_name}"
-	else
-		resolve_commit_for_package_version "${version}" "${repo_path}" ""
-	fi
-}
-
 function git_clone_or_fetch() {
 	url=${1}              # url/name.git
 	name_git=${url##*/}   # name.git
