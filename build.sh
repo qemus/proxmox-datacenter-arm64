@@ -35,6 +35,20 @@ function download_package() {
 	echo "${file}"
 }
 
+function download_external_package() {
+	url=${1}
+
+	file="${PACKAGES}/${url##*/}"
+
+	if [ -e "${file}" ]; then
+		echo "${file##*/} up-to-date"
+		return
+	fi
+
+	echo "Downloading ${file##*/}"
+	curl -fsSL "${url}" -o "${file}"
+}
+
 function get_base() {
 	local repo="$1"
 
@@ -288,6 +302,14 @@ function dependency_constraint_from_deb() {
 	return 1
 }
 
+function dependency_version() {
+	constraint=${1}
+
+	if [ -n "${constraint}" ]; then
+		echo "${constraint#*;}"
+	fi
+}
+
 function package_version_satisfying() {
 	repo=${1}
 	package_name=${2}
@@ -377,6 +399,60 @@ function download_package_latest() {
 	download_package "${repo}" "${package}" "${version}" "${dest}"
 }
 
+function latest_github_release_asset() {
+	repo=${1}
+	package=${2}
+	min_version=${3}
+
+	api_url="https://api.github.com/repos/${repo}/releases"
+
+	curl -sSfL "${api_url}" |
+		jq -r --arg package "${package}" '
+			.[] as $release |
+			$release.assets[] |
+			select(.name | test("^" + $package + "_[0-9][^_]*_arm64\\.deb$")) |
+			[
+				.name,
+				($release.tag_name // ""),
+				.browser_download_url
+			] |
+			@tsv
+		' |
+		while IFS=$'\t' read -r asset tag url; do
+			version="$(
+				echo "${asset}" |
+					sed -E "s/^${package}_([^_]+)_arm64\.deb$/\1/"
+			)"
+
+			if dpkg --compare-versions "${version}" ge "${min_version}"; then
+				echo "${version};${tag};${url};${asset}"
+			fi
+		done |
+		sort -t ';' -k1,1V |
+		tail -n1
+}
+
+function github_release_asset_by_tag() {
+	repo=${1}
+	tag=${2}
+	package=${3}
+
+	api_url="https://api.github.com/repos/${repo}/releases/tags/${tag}"
+
+	curl -sSfL "${api_url}" |
+		jq -r --arg package "${package}" '
+			.assets[]
+			| select(.name | test("^" + $package + "_[0-9][^_]*_arm64\\.deb$"))
+			| [
+				.name,
+				.browser_download_url
+			]
+			| @tsv
+		' |
+		sort -t '_' -k2,2V |
+		tail -n1
+}
+
 function git_clone_or_fetch() {
 	url=${1}              # url/name.git
 	name_git=${url##*/}   # name.git
@@ -461,26 +537,6 @@ resolve_dependency_repo_commit() {
 	source_date="$(git -C "${source_path}" show -s --format=%ci "${source_commit}" 2>/dev/null || true)"
 	if [ -n "${source_date}" ]; then
 		commit="$(git -C "${dependency_repo_path}" log --all --format="%H" -1 --before="${source_date}" 2>/dev/null || true)"
-		if [ -n "${commit}" ]; then
-			echo "${commit}"
-			return 0
-		fi
-	fi
-
-	return 1
-}
-
-function resolve_commit_before() {
-	source_commit=${1}
-	source_path=${2}
-	target_path=${3}
-
-	# Pick the newest commit in target_path at or before source_commit's date.
-	# This keeps bundled/nested Proxmox checkouts aligned with the project that uses them
-	# without needing to manually maintain a second hardcoded commit hash.
-	source_date=$(git -C "${source_path}" show -s --format=%ci "${source_commit}" 2>/dev/null || true)
-	if [ -n "${source_date}" ]; then
-		commit=$(git -C "${target_path}" log --all --format="%H" -1 --before="${source_date}" 2>/dev/null || true)
 		if [ -n "${commit}" ]; then
 			echo "${commit}"
 			return 0
@@ -1019,8 +1075,7 @@ download_runtime_arch_all_dependencies \
 PVE_XTERMJS_VER="$(latest_package_version pve pve-xtermjs)"
 
 # Download pve-xtermjs first, then use its package metadata to determine which
-# proxmox-termproxy version should be built. This avoids hardcoding both the
-# xtermjs commit and the termproxy version.
+# proxmox-termproxy version should be downloaded from the PBS ARM64 release.
 echo "Using pve-xtermjs package version: ${PVE_XTERMJS_VER}"
 if [ ! -e "${PACKAGES}/pve-xtermjs_${PVE_XTERMJS_VER}_all.deb" ]; then
 	echo "Downloading Architecture:all pve-xtermjs package"
@@ -1032,100 +1087,66 @@ fi
 
 termproxy_constraint="$(dependency_constraint_from_deb "${pve_xtermjs_deb}" proxmox-termproxy || true)"
 if [ -n "${termproxy_constraint}" ]; then
-	termproxy_relation="${termproxy_constraint%%;*}"
-	termproxy_required_version="${termproxy_constraint#*;}"
-	PROXMOX_TERMPROXY_VER="$(package_version_satisfying pve proxmox-termproxy "${termproxy_relation}" "${termproxy_required_version}")"
-	echo "Using proxmox-termproxy package version from pve-xtermjs dependency: ${PROXMOX_TERMPROXY_VER}"
+	PROXMOX_TERMPROXY_MIN_VERSION="$(dependency_version "${termproxy_constraint}")"
+	PROXMOX_TERMPROXY_MIN_VERSION="${PROXMOX_TERMPROXY_MIN_VERSION%-*}"
 else
-	PROXMOX_TERMPROXY_VER="$(latest_package_version pve proxmox-termproxy)"
-	echo "Warning: pve-xtermjs does not declare proxmox-termproxy dependency; using latest available ${PROXMOX_TERMPROXY_VER}" >&2
+	PROXMOX_TERMPROXY_MIN_VERSION="$(latest_package_version pve proxmox-termproxy)"
+	PROXMOX_TERMPROXY_MIN_VERSION="${PROXMOX_TERMPROXY_MIN_VERSION%-*}"
+	echo "Warning: pve-xtermjs does not declare proxmox-termproxy dependency; using latest available ${PROXMOX_TERMPROXY_MIN_VERSION}" >&2
 fi
 
-git_clone_or_fetch https://git.proxmox.com/git/pve-xtermjs.git
-PVE_XTERMJS_GIT="$(resolve_commit_for_package_version "${PROXMOX_TERMPROXY_VER}" pve-xtermjs proxmox-termproxy || true)"
-if [ -z "${PVE_XTERMJS_GIT}" ]; then
-	echo "Error: could not resolve pve-xtermjs commit containing proxmox-termproxy ${PROXMOX_TERMPROXY_VER}" >&2
-	echo "Available changelog heads:" >&2
-	git -C pve-xtermjs ls-files '*debian/changelog' | while read -r changelog; do
-		echo "--- ${changelog}" >&2
-		git -C pve-xtermjs show "HEAD:${changelog}" 2>/dev/null | head -5 >&2 || true
-	done
+if [ -z "${PROXMOX_TERMPROXY_MIN_VERSION}" ]; then
+	echo "Could not resolve minimum proxmox-termproxy version" >&2
 	exit 1
 fi
 
-echo "Using pve-xtermjs commit for proxmox-termproxy ${PROXMOX_TERMPROXY_VER}: ${PVE_XTERMJS_GIT}"
-git_clean_and_checkout ${PVE_XTERMJS_GIT} pve-xtermjs
+TERMPROXY_ASSET="$(
+	latest_github_release_asset \
+		qemus/proxmox-backup-arm64 \
+		proxmox-termproxy \
+		"${PROXMOX_TERMPROXY_MIN_VERSION}"
+)"
 
-if [ ! -e "${PACKAGES}/proxmox-termproxy_${PROXMOX_TERMPROXY_VER}_${HOST_ARCH}.deb" ]; then
-	patch -p1 -d pve-xtermjs/ <"${PATCHES}/pve-xtermjs-arm.patch"
-	[[ "${BUILD_PROFILES}" =~ cross ]] && patch -p1 -d pve-xtermjs/ <"${PATCHES}/pve-xtermjs-cross.patch"
-	cd pve-xtermjs/
-	git_clone_or_fetch https://git.proxmox.com/git/proxmox.git
-	PROXMOX_XTERMJS_GIT="$(resolve_commit_before "${PVE_XTERMJS_GIT}" . proxmox || true)"
-	if [ -z "${PROXMOX_XTERMJS_GIT}" ]; then
-		echo "Error: could not derive Proxmox commit for pve-xtermjs ${PVE_XTERMJS_GIT}" >&2
-		exit 1
-	fi
-	echo "Using pve-xtermjs Proxmox commit: ${PROXMOX_XTERMJS_GIT}"
-	git_clean_and_checkout ${PROXMOX_XTERMJS_GIT} proxmox
-	cd termproxy
-	set_package_info
-	${SUDO} apt -y -a${HOST_ARCH} build-dep .
-	if [[ "${BUILD_PROFILES}" =~ cross ]]; then
-		# The upstream Makefile runs lintian after building. Cross builds may use nostrip,
-		# which makes lintian fail even though the package was built correctly.
-		sed -i 's|^\([[:space:]]*\)lintian \(.*\)$|\1- lintian \2|' Makefile
-	fi
-	BUILD_MODE=release make deb
-	cd ../..
-	termproxy_deb="$(find "${SOURCES}/pve-xtermjs" -maxdepth 2 -type f -name "proxmox-termproxy_${PROXMOX_TERMPROXY_VER}_${HOST_ARCH}.deb" -print -quit)"
-	if [ -z "${termproxy_deb}" ]; then
-		echo "Error: proxmox-termproxy .deb not found" >&2
-		find "${SOURCES}/pve-xtermjs" -maxdepth 3 -type f -name 'proxmox-termproxy*.deb' -ls >&2
-		exit 1
-	fi
-	mv -f "${termproxy_deb}" "${PACKAGES}/"
-	rm -f "${SOURCES}/pve-xtermjs"/proxmox-termproxy-dbgsym_*.deb "${SOURCES}/pve-xtermjs"/termproxy/proxmox-termproxy-dbgsym_*.deb
-else
-	echo "proxmox-termproxy up-to-date"
-fi
-
-git_clone_or_fetch https://git.proxmox.com/git/proxmox-mini-journalreader.git
-PROXMOX_JOURNALREADER_GIT="$(git -C proxmox-mini-journalreader log --all --format='%H' -1 -- debian/changelog)"
-if [ -z "${PROXMOX_JOURNALREADER_GIT}" ]; then
-	echo "Error: could not resolve proxmox-mini-journalreader commit" >&2
+if [ -z "${TERMPROXY_ASSET}" ]; then
+	echo "Could not find proxmox-termproxy arm64 release >= ${PROXMOX_TERMPROXY_MIN_VERSION}" >&2
 	exit 1
 fi
 
-git_clean_and_checkout ${PROXMOX_JOURNALREADER_GIT} proxmox-mini-journalreader
-PROXMOX_JOURNALREADER_VER="$(cd proxmox-mini-journalreader && dpkg-parsechangelog -SVersion)"
-echo "Using proxmox-mini-journalreader package version: ${PROXMOX_JOURNALREADER_VER}"
+PROXMOX_TERMPROXY_VERSION="${TERMPROXY_ASSET%%;*}"
+TERMPROXY_ASSET_REST="${TERMPROXY_ASSET#*;}"
+PBS_RELEASE_TAG="${TERMPROXY_ASSET_REST%%;*}"
+TERMPROXY_ASSET_REST="${TERMPROXY_ASSET_REST#*;}"
+TERMPROXY_URL="${TERMPROXY_ASSET_REST%%;*}"
+TERMPROXY_FILE="${TERMPROXY_ASSET_REST#*;}"
 
-if [ ! -e "${PACKAGES}/proxmox-mini-journalreader_${PROXMOX_JOURNALREADER_VER}_${HOST_ARCH}.deb" ]; then
-	[[ "${BUILD_PROFILES}" =~ cross ]] &&
-		patch -p1 -d proxmox-mini-journalreader/ <"${PATCHES}/proxmox-mini-journalreader-cross.patch"
-	cd proxmox-mini-journalreader/
-	set_package_info
-	${SUDO} apt -y -a${HOST_ARCH} build-dep .
-	make deb
-    journalreader_deb="$(
-      find "${SOURCES}/proxmox-mini-journalreader" \
-        -maxdepth 3 \
-        -type f \
-        -name "proxmox-mini-journalreader_*_${HOST_ARCH}.deb" \
-        ! -name "*-dbgsym_*" \
-        -print -quit
-    )"	
-    if [ -z "${journalreader_deb}" ]; then
-		echo "Error: proxmox-mini-journalreader .deb not found" >&2
-		find "${SOURCES}/proxmox-mini-journalreader" -maxdepth 3 -type f -name 'proxmox-mini-journalreader*.deb' -ls >&2
-		exit 1
-	fi
-	mv -f "${journalreader_deb}" "${PACKAGES}/"
-	cd ..
-else
-	echo "proxmox-mini-journalreader up-to-date"
+echo "Resolved proxmox-termproxy:"
+echo "  minimum required: ${PROXMOX_TERMPROXY_MIN_VERSION}"
+echo "  selected package: ${PROXMOX_TERMPROXY_VERSION}"
+echo "  release tag:      ${PBS_RELEASE_TAG}"
+echo "  asset file:       ${TERMPROXY_FILE}"
+
+download_external_package "${TERMPROXY_URL}"
+
+JOURNALREADER_ASSET="$(
+	github_release_asset_by_tag \
+		qemus/proxmox-backup-arm64 \
+		"${PBS_RELEASE_TAG}" \
+		proxmox-mini-journalreader
+)"
+
+if [ -z "${JOURNALREADER_ASSET}" ]; then
+	echo "Could not find proxmox-mini-journalreader arm64 asset in PBS release ${PBS_RELEASE_TAG}" >&2
+	exit 1
 fi
+
+JOURNALREADER_FILE="${JOURNALREADER_ASSET%%$'\t'*}"
+JOURNALREADER_URL="${JOURNALREADER_ASSET#*$'\t'}"
+
+echo "Resolved proxmox-mini-journalreader:"
+echo "  release tag: ${PBS_RELEASE_TAG}"
+echo "  asset file:  ${JOURNALREADER_FILE}"
+
+download_external_package "${JOURNALREADER_URL}"
 
 # Rename platform independant packages to _all.deb
 for deb in "${PACKAGES}"/*_amd64.deb; do
