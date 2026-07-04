@@ -1147,7 +1147,7 @@ echo "  asset file:  ${JOURNALREADER_FILE}"
 
 download_external_package "${JOURNALREADER_URL}"
 
-# Rename platform independant packages to _all.deb
+# Rename platform independent packages to _all.deb
 for deb in "${PACKAGES}"/*_amd64.deb; do
   [ -e "$deb" ] || continue
   arch="$(dpkg-deb -f "$deb" Architecture 2>/dev/null || true)"
