@@ -646,6 +646,20 @@ function download_release() {
 	done
 }
 
+function remove_uninstallable_packages() {
+
+  # Kernel/header/meta packages are not needed for this install and may be
+  # uninstallable on ARM64 because their meta dependencies are unavailable.
+  
+  rm -f "${PACKAGES}"/pve-headers_*.deb
+  rm -f "${PACKAGES}"/proxmox-headers-*.deb
+  rm -f "${PACKAGES}"/proxmox-default-headers_*.deb
+  rm -f "${PACKAGES}"/proxmox-kernel-*.deb
+  rm -f "${PACKAGES}"/proxmox-kernel-helper_*.deb
+  rm -f "${PACKAGES}"/proxmox-default-kernel_*.deb
+  rm -f "${PACKAGES}"/proxmox-datacenter-manager-meta_*.deb
+}
+
 function install_server() {
 
 	if [ "${#file_list[@]}" -eq 0 ]; then
@@ -653,16 +667,7 @@ function install_server() {
 		return 1
 	fi
 
-	# Kernel/header/meta packages are not needed for this install and may be
-	# uninstallable on ARM64 because their meta dependencies are unavailable.
-	rm -f "${PACKAGES}"/pve-headers_*.deb
-	rm -f "${PACKAGES}"/proxmox-headers-*.deb
-	rm -f "${PACKAGES}"/proxmox-default-headers_*.deb
-	rm -f "${PACKAGES}"/proxmox-kernel-*.deb
-	rm -f "${PACKAGES}"/proxmox-kernel-helper_*.deb
-	rm -f "${PACKAGES}"/proxmox-default-kernel_*.deb
-	rm -f "${PACKAGES}"/proxmox-datacenter-manager-meta_*.deb
-
+    remove_uninstallable_packages
 	mapfile -t file_list < <(find "${PACKAGES}" -maxdepth 1 -name '*.deb' -print | sort)
 
 	if [ "${#file_list[@]}" -eq 0 ]; then
@@ -1144,6 +1149,9 @@ for deb in "${PACKAGES}"/*_amd64.deb; do
   fixed="${deb%_amd64.deb}_all.deb"
   mv -f "$deb" "$fixed"
 done
+
+# Remove uninstallable packages from output
+remove_uninstallable_packages
 
 # Remove debug symbol packages from output directory.
 rm -f "${PACKAGES}"/*-dbgsym_*.deb "${PACKAGES}"/*.ddeb
