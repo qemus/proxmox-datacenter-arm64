@@ -51,7 +51,11 @@ function download_external_package() {
 	fi
 
 	echo "Downloading ${file##*/}"
-	curl -fsSL "${url}" -o "${file}"
+
+    if ! curl -sSfL "${url}" -o "${file}"; then
+        echo "Error: failed to download ${package_name} from ${url}" >&2
+        return 1
+    fi
 }
 
 function get_base() {
