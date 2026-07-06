@@ -178,8 +178,11 @@ function download_arch_all_package_satisfying() {
 	fi
 
 	echo "${package_name} ${version_target} downloading runtime dependency...${url}" >&2
-	curl -sSfL "${url}" -o "${file}"
-	echo "${file}"
+    if ! curl -sSfL "${url}" -o "${file}"; then
+        echo "Error: failed to download ${package_name} from ${url}" >&2
+        return 1
+    fi
+    echo "${file}"
 }
 
 function download_runtime_arch_all_dependency() {
@@ -655,13 +658,6 @@ function repack_deb_as_all() {
   return 0
 }
 
-function is_container() {
-	[ -f /.dockerenv ] ||
-	[ -f /run/.containerenv ] ||
-	[ -e /dev/.buildkit_qemu_emulator ] ||
-	grep -qaE '(docker|containerd|kubepods|libpod|buildkit)' /proc/1/cgroup 2>/dev/null
-}
-
 file_list=()
 function download_release() {
 	version=${1:-latest}
@@ -704,7 +700,10 @@ function download_release() {
 			echo "${file} already exists"
 		else
 			echo "Downloading ${file}"
-			curl -sSfL "${download_url}" -o "${PACKAGES}/${file}"
+            if ! curl -sSfL "${download_url}" -o "${PACKAGES}/${file}"; then
+                echo "Error: failed to download release from $download_url" >&2
+                return 1
+			fi
 		fi
 
 		file_list+=("${PACKAGES}/${file}")
