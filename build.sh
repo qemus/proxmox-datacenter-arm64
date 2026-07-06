@@ -31,7 +31,12 @@ function download_package() {
 	fi
 
 	echo "${package} downloading...${url}" >&2
-	curl -sSfL "${url}" -o "${file}"
+
+    if ! curl -sSfL "${url}" -o "${file}"; then
+        echo "Error: failed to download ${package_name} from ${url}" >&2
+        return 1
+    fi
+
 	echo "${file}"
 }
 
@@ -121,7 +126,12 @@ function download_package_max_upstream_no_deps() {
 	fi
 
 	echo "${package_name} ${version_target} downloading...${url}" >&2
-	curl -sSfL "${url}" -o "${file}"
+
+    if ! curl -sSfL "${url}" -o "${file}"; then
+        echo "Error: failed to download ${package_name} from ${url}" >&2
+        return 1
+    fi
+
 	echo "${file}"
 }
 
