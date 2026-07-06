@@ -650,15 +650,32 @@ function repack_deb_as_all() {
   tmp="$(mktemp -d)"
   out="${deb%_amd64.deb}_all.deb"
 
-  dpkg-deb -R "$deb" "$tmp" >&2
-  sed -i 's/^Architecture: .*/Architecture: all/' "$tmp/DEBIAN/control"
-  dpkg-deb -b "$tmp" "$out" >&2
+  if ! dpkg-deb -R "$deb" "$tmp" >&2; then
+    rm -rf "$tmp"
+    echo "Error: failed to extract $deb" >&2
+    return 1
+  fi
+
+  if ! sed -i 's/^Architecture: .*/Architecture: all/' "$tmp/DEBIAN/control"; then
+    rm -rf "$tmp"
+    echo "Error: failed to modify package architecture for $deb" >&2
+    return 1
+  fi
+
+  if ! dpkg-deb -b "$tmp" "$out" >&2; then
+    rm -rf "$tmp"
+    echo "Error: failed to rebuild $out" >&2
+    return 1
+  fi
 
   rm -rf "$tmp"
-  rm -f "$deb"
+
+  if ! rm -f "$deb"; then
+    echo "Error: failed to remove original package $deb" >&2
+    return 1
+  fi
 
   echo "$out"
-
   return 0
 }
 
