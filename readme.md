@@ -6,11 +6,9 @@
 
 Script for building Proxmox Datacenter Manager **1.x** for ARM64.
 
-For an easier experience, you can also use the [Datacenter Manager Docker container](https://github.com/dockur/proxmox-datacenter), which includes these same packages.
-
 ## Download pre-built packages
 
-You can find unofficial Debian packages that are created with this script at [https://github.com/qemus/proxmox-datacenter-arm64/releases](https://github.com/qemus/proxmox-datacenter-arm64/releases).
+You can find unofficial Debian packages that are created with this script in the [Releases](https://github.com/qemus/proxmox-datacenter-arm64/releases) section.
 
 With the script you can also download or install all packages of the latest release automatically.
 
@@ -21,6 +19,8 @@ With the script you can also download or install all packages of the latest rele
 **Download only**
 
 `./build.sh download` or a specific version `./build.sh download=1.1.4`
+
+For an even easier experience, you can also use the [Datacenter Manager Docker container](https://github.com/dockur/proxmox-datacenter), which is built on top of these same packages.
 
 ## Build manually
 
