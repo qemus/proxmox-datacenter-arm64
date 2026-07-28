@@ -892,11 +892,11 @@ fi
 
 echo "Download packages list from proxmox devel repository"
 PACKAGES_DEVEL=$(load_packages http://download.proxmox.com/debian/devel/dists/trixie/main/binary-amd64/Packages.gz)
-echo "Download packages list from pdm repositories"
-PACKAGES_PDM="$(
-	load_packages http://download.proxmox.com/debian/pdm/dists/trixie/pdm-test/binary-amd64/Packages.gz
-	load_packages http://download.proxmox.com/debian/pdm/dists/trixie/pdm-no-subscription/binary-amd64/Packages.gz
-)"
+
+echo "Download packages list from PDM repository"
+PACKAGES_PDM=$(load_packages \
+	http://download.proxmox.com/debian/pdm/dists/trixie/pdm-no-subscription/binary-amd64/Packages.gz)
+
 echo "Download packages list from PVE repository"
 PACKAGES_PVE=$(load_packages http://download.proxmox.com/debian/pve/dists/trixie/pve-no-subscription/binary-amd64/Packages.gz)
 
