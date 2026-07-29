@@ -133,6 +133,6 @@ Special thanks to [wofferl](https://github.com/wofferl), this project would not 
 [build_url]: https://github.com/qemus/proxmox-datacenter-arm64/
 [release_url]: https://github.com/qemus/proxmox-datacenter-arm64/releases/
 
-[Build]: https://github.com/qemus/proxmox-datacenter-arm64/actions/workflows/release.yml/badge.svg
+[Build]: https://github.com/qemus/proxmox-datacenter-arm64/actions/workflows/build.yml/badge.svg
 [Size]: https://img.shields.io/badge/size-20.3_MB-steelblue?style=flat&color=066da5
 [Version]: https://img.shields.io/github/v/tag/qemus/proxmox-datacenter-arm64?label=version&sort=semver&color=066da5
