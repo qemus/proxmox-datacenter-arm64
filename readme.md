@@ -1,8 +1,11 @@
-# proxmox-datacenter-manager-arm64
-
+<h1 align="center">proxmox-datacenter-arm64<br />
+<div align="center">
+  
 [![Build]][build_url]
 [![Version]][release_url]
 [![Size]][release_url]
+
+</div></h1>
 
 Script for building Proxmox Datacenter Manager **1.x** for ARM64.
 
